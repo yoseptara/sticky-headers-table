@@ -40,19 +40,19 @@ class _DecoratedTablePageState extends State<DecoratedTablePage> {
               rowsLength: widget.titleRow.length,
               columnsTitleBuilder: (i) => TableCell.stickyRow(
                 widget.titleColumn[i],
-                textStyle: textTheme.button!.copyWith(fontSize: 15.0),
+                textStyle: textTheme.labelLarge!.copyWith(fontSize: 15.0),
               ),
               rowsTitleBuilder: (i) => TableCell.stickyColumn(
                 widget.titleRow[i],
-                textStyle: textTheme.button!.copyWith(fontSize: 15.0),
+                textStyle: textTheme.labelLarge!.copyWith(fontSize: 15.0),
               ),
               contentCellBuilder: (i, j) => TableCell.content(
                 widget.data[i][j],
-                textStyle: textTheme.bodyText2!.copyWith(fontSize: 12.0),
+                textStyle: textTheme.bodyMedium!.copyWith(fontSize: 12.0),
               ),
               legendCell: TableCell.legend(
                 'Sticky Legend',
-                textStyle: textTheme.button!.copyWith(fontSize: 16.5),
+                textStyle: textTheme.labelLarge!.copyWith(fontSize: 16.5),
               ),
               showVerticalScrollbar: isVerticalScrollbar,
               showHorizontalScrollbar: isHorizontalScrollbar,
