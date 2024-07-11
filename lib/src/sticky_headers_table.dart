@@ -45,6 +45,12 @@ class StickyHeadersTable extends StatefulWidget {
 
     /// Callbacks for when pressing a cell
     Function()? onStickyLegendPressed,
+
+    this.onLeftCircleButtonPressed,
+    this.onRightCircleButtonPressed,
+    this.onTopCircleButtonPressed,
+    this.onBottomCircleButtonPressed,
+
     Function(int columnIndex)? onColumnTitlePressed,
     Function(int rowIndex)? onRowTitlePressed,
     Function(int columnIndex, int rowIndex)? onContentCellPressed,
@@ -95,6 +101,10 @@ class StickyHeadersTable extends StatefulWidget {
   final CellDimensions cellDimensions;
   final CellAlignments cellAlignments;
   final Function() onStickyLegendPressed;
+  final Function()? onLeftCircleButtonPressed;
+  final Function()? onRightCircleButtonPressed;
+  final Function()? onTopCircleButtonPressed;
+  final Function()? onBottomCircleButtonPressed;
   final Function(int columnIndex) onColumnTitlePressed;
   final Function(int rowIndex) onRowTitlePressed;
   final Function(int columnIndex, int rowIndex) onContentCellPressed;
@@ -125,10 +135,21 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
   late double _scrollOffsetX;
   late double _scrollOffsetY;
 
-  final ValueNotifier<bool> showLeftScroll = ValueNotifier(false);
-  final ValueNotifier<bool> showRightScroll = ValueNotifier(true);
-  final ValueNotifier<bool> showTopScroll = ValueNotifier(false);
-  final ValueNotifier<bool> showBottomScroll = ValueNotifier(true);
+  final ValueNotifier<bool> showLeftCircleButton = ValueNotifier(true);
+  final ValueNotifier<bool> showRightCircleButton = ValueNotifier(false);
+  final ValueNotifier<bool> showTopCircleButton = ValueNotifier(true);
+  final ValueNotifier<bool> showBottomCircleButton = ValueNotifier(false);
+
+  void _checkInitialScrollPositions() {
+    final horizontalPosition = widget.scrollControllers.horizontalBodyController.position;
+    final verticalPosition = widget.scrollControllers.verticalBodyController.position;
+
+    showLeftCircleButton.value = horizontalPosition.pixels > horizontalPosition.minScrollExtent;
+    showRightCircleButton.value = horizontalPosition.pixels < horizontalPosition.maxScrollExtent;
+
+    showTopCircleButton.value = verticalPosition.pixels > verticalPosition.minScrollExtent;
+    showBottomCircleButton.value = verticalPosition.pixels < verticalPosition.maxScrollExtent;
+  }
 
   bool _onHorizontalScrollingNotification({
     required ScrollNotification notification,
@@ -143,27 +164,27 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
     final cellWidth = widget.cellDimensions.contentCellWidth ?? 0;
 
     if (position.hasPixels) {
-      final newShowLeftScroll =
-          position.pixels > position.minScrollExtent;
-      final newShowRightScroll =
-          position.pixels < position.maxScrollExtent;
+      final newShowLeftCircleButton =
+          position.pixels <= position.minScrollExtent;
+      final newShowRightCircleButton =
+          position.pixels >= position.maxScrollExtent;
 
-      if (showLeftScroll != newShowLeftScroll)
-        showLeftScroll.value = newShowLeftScroll;
-      if (showRightScroll != newShowRightScroll)
-        showRightScroll.value = newShowRightScroll;
+      if (showLeftCircleButton != newShowLeftCircleButton)
+        showLeftCircleButton.value = newShowLeftCircleButton;
+      if (showRightCircleButton != newShowRightCircleButton)
+        showRightCircleButton.value = newShowRightCircleButton;
     }
 
     // if (position.hasPixels) {
-    //   final newShowLeftScroll =
+    //   final newShowLeftCircleButton =
     //       position.pixels > position.minScrollExtent;
-    //   final newShowRightScroll =
+    //   final newShowRightCircleButton =
     //       position.pixels < position.maxScrollExtent;
     //
-    //   if (showLeftScroll != newShowLeftScroll)
-    //     setState(() => showLeftScroll = newShowLeftScroll);
-    //   if (showRightScroll != newShowRightScroll)
-    //     setState(() => showRightScroll = newShowRightScroll);
+    //   if (showLeftScroll != newShowLeftCircleButton)
+    //     setState(() => showLeftScroll = newShowLeftCircleButton);
+    //   if (showRightScroll != newShowRightCircleButton)
+    //     setState(() => showRightScroll = newShowRightCircleButton);
     // }
 
     final onEndScrolling = widget.onEndScrolling;
@@ -188,29 +209,29 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
 
 
     if (position.hasPixels) {
-      final newShowTopScroll =
-          position.pixels > position.minScrollExtent;
-      final newShowBottomScroll =
-          position.pixels < position.maxScrollExtent;
+      final newShowTopCircleButton =
+          position.pixels <= position.minScrollExtent;
+      final newShowBottomCircleButton =
+          position.pixels >= position.maxScrollExtent;
 
-      if (showTopScroll != newShowTopScroll)
-        showTopScroll.value = newShowTopScroll;
+      if (showTopCircleButton != newShowTopCircleButton)
+        showTopCircleButton.value = newShowTopCircleButton;
 
-      if (showBottomScroll != newShowBottomScroll)
-        showBottomScroll.value = newShowBottomScroll;
+      if (showBottomCircleButton != newShowBottomCircleButton)
+        showBottomCircleButton.value = newShowBottomCircleButton;
     }
     
     // if (position.hasPixels) {
-    //   final newShowTopScroll =
+    //   final newShowTopCircleButton =
     //       position.pixels > position.minScrollExtent;
-    //   final newShowBottomScroll =
+    //   final newShowBottomCircleButton =
     //       position.pixels < position.maxScrollExtent;
     //
-    //   if (showTopScroll != newShowTopScroll)
-    //     setState(() => showTopScroll = newShowTopScroll);
+    //   if (showTopScroll != newShowTopCircleButton)
+    //     setState(() => showTopScroll = newShowTopCircleButton);
     //
-    //   if (showBottomScroll != newShowBottomScroll)
-    //     setState(() => showBottomScroll = newShowBottomScroll);
+    //   if (showBottomScroll != newShowBottomCircleButton)
+    //     setState(() => showBottomScroll = newShowBottomCircleButton);
     // }
 
     final onEndScrolling = widget.onEndScrolling;
@@ -257,8 +278,10 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
     super.initState();
     _scrollOffsetX = widget.initialScrollOffsetX ?? 0;
     _scrollOffsetY = widget.initialScrollOffsetY ?? 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkInitialScrollPositions();
+    });
   }
-
   @override
   void dispose() {
     if (widget.shouldDisposeScrollControllers) {
@@ -369,21 +392,21 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
                             ),
                           ),
                         ),
-                        if (widget.columnsTitlesLeftBorder != null)
-                          Positioned.fill(
-                            left: -1 * (widget.columnsTitlesLeftBorder?.width ?? 0),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.only(
-                                  topLeft: widget.columnsTitlesTopLeftBorderRadius ??
-                                      Radius.zero,
-                                ),
-                                border: Border(
-                                  left: widget.columnsTitlesLeftBorder!,
-                                ),
-                              ),
-                            ),
-                          ),
+                        // if (widget.columnsTitlesLeftBorder != null)
+                        //   Positioned.fill(
+                        //     left: -1 * (widget.columnsTitlesLeftBorder?.width ?? 0),
+                        //     child: DecoratedBox(
+                        //       decoration: BoxDecoration(
+                        //         borderRadius: BorderRadius.only(
+                        //           topLeft: widget.columnsTitlesTopLeftBorderRadius ??
+                        //               Radius.zero,
+                        //         ),
+                        //         border: Border(
+                        //           left: widget.columnsTitlesLeftBorder!,
+                        //         ),
+                        //       ),
+                        //     ),
+                        //   ),
 
                       ],
                     ),
@@ -519,21 +542,22 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
             ],
           ),
         ),
-        ValueListenableBuilder<bool>(valueListenable: showLeftScroll, builder: (context, value, child) {
+        ValueListenableBuilder<bool>(valueListenable: showLeftCircleButton, builder: (context, value, child) {
           if(value) {
             return    Positioned(
               top: (widget.cellDimensions.stickyLegendHeight / 2) - 32,
               left: widget.cellDimensions.stickyLegendWidth - 32,
               child: GestureDetector(
-                onTap: () => widget
-                    .scrollControllers.horizontalBodyController
-                    .animateTo(
-                  widget.scrollControllers.horizontalBodyController
-                      .offset -
-                      (widget.cellDimensions.contentCellWidth ?? 0),
-                  duration: const Duration(milliseconds: 50),
-                  curve: Curves.easeInOut,
-                ),
+                onTap: widget.onLeftCircleButtonPressed,
+                // onTap: () => widget
+                //     .scrollControllers.horizontalBodyController
+                //     .animateTo(
+                //   widget.scrollControllers.horizontalBodyController
+                //       .offset -
+                //       (widget.cellDimensions.contentCellWidth ?? 0),
+                //   duration: const Duration(milliseconds: 50),
+                //   curve: Curves.easeInOut,
+                // ),
                 child: _ArrowCircle(),
               ),
             );
@@ -542,20 +566,21 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
           return SizedBox.shrink();
         }),
 
-        ValueListenableBuilder<bool>(valueListenable: showRightScroll, builder: (context, value, child) {
+        ValueListenableBuilder<bool>(valueListenable: showRightCircleButton, builder: (context, value, child) {
           if(value){
             return Positioned(
               right: 0,
               child: GestureDetector(
-                onTap: () => widget
-                    .scrollControllers.horizontalBodyController
-                    .animateTo(
-                  widget.scrollControllers.horizontalBodyController
-                      .offset +
-                      (widget.cellDimensions.contentCellWidth ?? 0),
-                  duration: const Duration(milliseconds: 50),
-                  curve: Curves.easeInOut,
-                ),
+                onTap: widget.onRightCircleButtonPressed,
+                // onTap: () => widget
+                //     .scrollControllers.horizontalBodyController
+                //     .animateTo(
+                //   widget.scrollControllers.horizontalBodyController
+                //       .offset +
+                //       (widget.cellDimensions.contentCellWidth ?? 0),
+                //   duration: const Duration(milliseconds: 50),
+                //   curve: Curves.easeInOut,
+                // ),
                 child: _ArrowCircle(),
               ),
             );
@@ -564,21 +589,22 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
           return SizedBox.shrink();
         }),
 
-        ValueListenableBuilder<bool>(valueListenable: showTopScroll, builder: (context, value, child) {
+        ValueListenableBuilder<bool>(valueListenable: showTopCircleButton, builder: (context, value, child) {
           if(value) {
             return Positioned(
               top: widget.cellDimensions.stickyLegendHeight - 32,
               left: (widget.cellDimensions.stickyLegendWidth / 2) - 32,
               child: GestureDetector(
-                onTap: () => widget
-                    .scrollControllers.verticalBodyController
-                    .animateTo(
-                  widget.scrollControllers.verticalBodyController
-                      .offset -
-                      (widget.cellDimensions.contentCellHeight ?? 0),
-                  duration: const Duration(milliseconds: 50),
-                  curve: Curves.easeInOut,
-                ),
+                onTap: widget.onTopCircleButtonPressed,
+                // onTap: () => widget
+                //     .scrollControllers.verticalBodyController
+                //     .animateTo(
+                //   widget.scrollControllers.verticalBodyController
+                //       .offset -
+                //       (widget.cellDimensions.contentCellHeight ?? 0),
+                //   duration: const Duration(milliseconds: 50),
+                //   curve: Curves.easeInOut,
+                // ),
                 child: _ArrowCircle(),
               ),
             );
@@ -586,21 +612,22 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
           return SizedBox.shrink();
         }),
 
-        ValueListenableBuilder<bool>(valueListenable: showBottomScroll, builder: (context, value, child) {
+        ValueListenableBuilder<bool>(valueListenable: showBottomCircleButton, builder: (context, value, child) {
           if(value) {
             return Positioned(
               bottom: 0,
               left: (widget.cellDimensions.stickyLegendWidth / 2) - 32,
               child: GestureDetector(
-                onTap: () => widget
-                    .scrollControllers.verticalBodyController
-                    .animateTo(
-                  widget.scrollControllers.verticalBodyController
-                      .offset +
-                      (widget.cellDimensions.contentCellHeight ?? 0),
-                  duration: const Duration(milliseconds: 50),
-                  curve: Curves.easeInOut,
-                ),
+                onTap: widget.onBottomCircleButtonPressed,
+                // onTap: () => widget
+                //     .scrollControllers.verticalBodyController
+                //     .animateTo(
+                //   widget.scrollControllers.verticalBodyController
+                //       .offset +
+                //       (widget.cellDimensions.contentCellHeight ?? 0),
+                //   duration: const Duration(milliseconds: 50),
+                //   curve: Curves.easeInOut,
+                // ),
                 child: _ArrowCircle(),
               ),
             );

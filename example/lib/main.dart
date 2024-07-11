@@ -15,8 +15,8 @@ void main() {
 }
 
 class LandingPage extends StatefulWidget {
-  final columns = 10;
-  final rows = 20;
+  final columns = 7;
+  final rows = 7;
 
   List<List<String>> makeData() {
     final List<List<String>> output = [];

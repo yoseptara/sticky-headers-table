@@ -22,7 +22,8 @@ const _defaultBorderSide =
     BorderSide(width: _defaultBorderWidth, color: _defaultBorderClr);
 
 const _selectedBorderWidth = 1.5;
-const _selectedBorderSide = BorderSide(width: _selectedBorderWidth, color: Color(0xff0D4689));
+const _selectedBorderSide =
+    BorderSide(width: _selectedBorderWidth, color: Color(0xff0D4689));
 const _borderRadius = Radius.circular(4);
 
 const _highlightClr = Color(0xffE3F4FD);
@@ -31,6 +32,8 @@ const _selectedClr = Color(0xff0D4689);
 class _TapHandlerPageState extends State<TapHandlerPage> {
   int? selectedRow;
   int? selectedColumn;
+
+  int pageAdder = 0;
 
   Color getContentColor(int i, int j) {
     if (i == selectedRow && j == selectedColumn) {
@@ -42,10 +45,10 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
     }
   }
 
-  void clearState() => setState(() {
-        selectedRow = null;
-        selectedColumn = null;
-      });
+  void clearSelectedCell() {
+    selectedRow = null;
+    selectedColumn = null;
+  }
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -62,6 +65,22 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
             child: StickyHeadersTable(
               columnsLength: widget.titleColumn.length,
               rowsLength: widget.titleRow.length,
+              onLeftCircleButtonPressed:() => setState(() {
+                clearSelectedCell();
+                pageAdder-=1;
+              }),
+              onRightCircleButtonPressed:() => setState(() {
+                clearSelectedCell();
+                pageAdder+=1;
+              }),
+              onTopCircleButtonPressed:() => setState(() {
+                clearSelectedCell();
+                pageAdder-=1;
+              }),
+              onBottomCircleButtonPressed:() => setState(() {
+                clearSelectedCell();
+                pageAdder+=1;
+              }),
               cellDimensions: CellDimensions.fixed(
                 contentCellWidth: 88,
                 contentCellHeight: 68,
@@ -70,17 +89,15 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
               ),
               columnsTitleBuilder: (i) {
                 final isLastRow =
-                    (selectedRow ?? 0) + 1 == widget.titleColumn.length;
+                    (selectedRow ?? 0) + 1 >= widget.titleColumn.length;
                 final isAnyColumnCellSelected = selectedRow == i;
                 return Stack(
                   children: [
                     DecoratedBox(
-                      decoration: BoxDecoration(
-                          border: isLastRow
-                              ? null
-                              : Border(
-                                  right: _defaultBorderSide,
-                                )),
+                      decoration: buildColumnsTitleDecoration(
+                        isAnyColumnCellSelected: isAnyColumnCellSelected,
+                        isLastRow: isLastRow,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -95,8 +112,8 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                               color: Color(0xff333333),
                             ),
                           ),
-                          const Text(
-                            '11 Jun',
+                          Text(
+                            '${15 + pageAdder} Jun',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontWeight: FontWeight.w300,
@@ -108,43 +125,40 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                         ],
                       ),
                     ),
-                    if (isAnyColumnCellSelected)
-                      Positioned.fill(
-                        left: (isAnyColumnCellSelected ? _selectedBorderWidth : _defaultBorderWidth) * -1,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.only(
-                              topLeft: _borderRadius,
-                              topRight: _borderRadius,
-                            ),
-                            border: isAnyColumnCellSelected
-                                ? Border(
-                                    top: _selectedBorderSide,
-                                    left: _selectedBorderSide,
-                                    right: _selectedBorderSide,
-                                  )
-                                : Border.all(width: 1, color: Color(0xffE1E7EA)),
-                          ),
-                        ),
-                      ),
+                    // if (buildBorder(isAnyColumnCellSelected))
+                    //   Positioned.fill(
+                    //     left: (buildBorder(isAnyColumnCellSelected)
+                    //             ? _selectedBorderWidth
+                    //             : _defaultBorderWidth) *
+                    //         -1,
+                    //     child: Container(
+                    //       decoration: BoxDecoration(
+                    //         borderRadius: BorderRadius.only(
+                    //           topLeft: _borderRadius,
+                    //           topRight: _borderRadius,
+                    //         ),
+                    //         border: buildBorder(isAnyColumnCellSelected)
+                    //             ? Border(
+                    //                 top: _selectedBorderSide,
+                    //                 left: _selectedBorderSide,
+                    //                 right: _selectedBorderSide,
+                    //               )
+                    //             : Border.all(
+                    //                 width: 1, color: Color(0xffE1E7EA)),
+                    //       ),
+                    //     ),
+                    //   ),
                   ],
                 );
               },
               rowsTitleBuilder: (i) {
+                final isLastColumn =
+                    (selectedColumn ?? 0) + 1 >= widget.titleRow.length;
                 final isAnyRowCellSelected = selectedColumn == i;
                 return DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.only(
-                      topLeft: _borderRadius,
-                      bottomLeft: _borderRadius,
-                    ),
-                    border: isAnyRowCellSelected
-                        ? Border(
-                            top: _selectedBorderSide,
-                            left: _selectedBorderSide,
-                            bottom: _selectedBorderSide,
-                          )
-                        : Border.all(width: 1, color: Color(0xffE1E7EA)),
+                  decoration: buildRowsTitleDecoration(
+                    isAnyRowCellSelected: isAnyRowCellSelected,
+                    isLastColumn: isLastColumn,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -160,8 +174,8 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                           color: Color(0xff333333),
                         ),
                       ),
-                      const Text(
-                        '11 Jun',
+                      Text(
+                        '${15 + pageAdder} Jun',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.w300,
@@ -184,6 +198,11 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                 final isColumnHighlighted =
                     selectedRow == i && selectedColumnValue >= j;
 
+                final isLastRow =
+                    (selectedRow ?? 0) + 1 >= widget.titleColumn.length;
+                final isLastColumn =
+                    (selectedColumn ?? 0) + 1 >= widget.titleRow.length;
+
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -203,16 +222,20 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                                       isRowHighlighted || isColumnHighlighted),
                                   borderRadius: isSelected
                                       ? BorderRadius.only(
-                                          bottomRight: _borderRadius)
+                                          bottomRight: _borderRadius,
+                                        )
                                       : null,
                                   border: getBorder(
                                     isRowHighlighted: isRowHighlighted,
                                     isColumnHighlighted: isColumnHighlighted,
+                                    isLastRow: isLastRow,
+                                    isLastColumn: isLastColumn,
                                   ),
                                 ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     const Text(
                                       'From MYR',
@@ -227,8 +250,8 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                                     SizedBox(
                                       height: 4,
                                     ),
-                                    const Text(
-                                      '3.5k',
+                                    Text(
+                                      '3.${15+pageAdder}k',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w300,
@@ -241,7 +264,7 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                                       height: 4,
                                     ),
                                     Text(
-                                      '4.8k',
+                                      '4.${15+pageAdder}k',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w300,
@@ -282,6 +305,68 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
         ),
       );
 
+  BoxDecoration buildRowsTitleDecoration({
+    required bool isAnyRowCellSelected,
+    required bool isLastColumn,
+  }) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.only(
+        topLeft: isAnyRowCellSelected ? _borderRadius : Radius.zero,
+        bottomLeft: isAnyRowCellSelected ? _borderRadius : Radius.zero,
+      ),
+      border: Border(
+        top: isAnyRowCellSelected ? _selectedBorderSide : BorderSide.none,
+        left: isAnyRowCellSelected ? _selectedBorderSide : BorderSide.none,
+        bottom: buildRowTitleBottomBorder(
+          isAnyRowCellSelected: isAnyRowCellSelected,
+          isLastColumn: isLastColumn,
+        ),
+      ),
+    );
+  }
+
+  BorderSide buildRowTitleBottomBorder({
+    required bool isAnyRowCellSelected,
+    required bool isLastColumn,
+  }) {
+    if (isAnyRowCellSelected) return _selectedBorderSide;
+
+    if (isLastColumn) return _defaultBorderSide;
+
+    return BorderSide.none;
+  }
+
+  BoxDecoration buildColumnsTitleDecoration({
+    required bool isAnyColumnCellSelected,
+    required bool isLastRow,
+  }) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.only(
+        topLeft: isAnyColumnCellSelected ? _borderRadius : Radius.zero,
+        topRight: isAnyColumnCellSelected ? _borderRadius : Radius.zero,
+      ),
+      border: Border(
+        top: isAnyColumnCellSelected ? _selectedBorderSide : BorderSide.none,
+        left: isAnyColumnCellSelected ? _selectedBorderSide : BorderSide.none,
+        right: buildColumnTitleRightBorder(
+          isAnyColumnCellSelected: isAnyColumnCellSelected,
+          isLastRow: isLastRow,
+        ),
+      ),
+    );
+  }
+
+  BorderSide buildColumnTitleRightBorder({
+    required bool isAnyColumnCellSelected,
+    required bool isLastRow,
+  }) {
+    if (isAnyColumnCellSelected) return _selectedBorderSide;
+
+    if (isLastRow) return _defaultBorderSide;
+
+    return BorderSide.none;
+  }
+
   Color? getCellColor(bool isSelected, bool isHighlighted) {
     if (isSelected) {
       return _selectedClr;
@@ -297,12 +382,31 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
   Border getBorder({
     required bool isRowHighlighted,
     required bool isColumnHighlighted,
+    required bool isLastRow,
+    required bool isLastColumn,
   }) {
     return Border(
-      left: isColumnHighlighted ? _selectedBorderSide : _defaultBorderSide,
-      top: isRowHighlighted ? _selectedBorderSide : _defaultBorderSide,
-      right: isColumnHighlighted ? _selectedBorderSide : _defaultBorderSide,
-      bottom: isRowHighlighted ? _selectedBorderSide : _defaultBorderSide,
+      left: isColumnHighlighted ? _selectedBorderSide : BorderSide.none,
+      top: isRowHighlighted ? _selectedBorderSide : BorderSide.none,
+      right: buildCellRightOrBottomBorder(
+        isHighlighted: isColumnHighlighted,
+        isLast: isLastRow,
+      ),
+      bottom: buildCellRightOrBottomBorder(
+        isHighlighted: isRowHighlighted,
+        isLast: isLastColumn,
+      ),
     );
+  }
+
+  BorderSide buildCellRightOrBottomBorder({
+    required bool isHighlighted,
+    required isLast,
+  }) {
+    if (isHighlighted) return _selectedBorderSide;
+
+    if (isLast) return _defaultBorderSide;
+
+    return BorderSide.none;
   }
 }
