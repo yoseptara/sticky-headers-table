@@ -45,12 +45,10 @@ class StickyHeadersTable extends StatefulWidget {
 
     /// Callbacks for when pressing a cell
     Function()? onStickyLegendPressed,
-
     this.onLeftCircleButtonPressed,
     this.onRightCircleButtonPressed,
     this.onTopCircleButtonPressed,
     this.onBottomCircleButtonPressed,
-
     Function(int columnIndex)? onColumnTitlePressed,
     Function(int rowIndex)? onRowTitlePressed,
     Function(int columnIndex, int rowIndex)? onContentCellPressed,
@@ -141,14 +139,20 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
   final ValueNotifier<bool> showBottomCircleButton = ValueNotifier(false);
 
   void _checkInitialScrollPositions() {
-    final horizontalPosition = widget.scrollControllers.horizontalBodyController.position;
-    final verticalPosition = widget.scrollControllers.verticalBodyController.position;
+    final horizontalPosition =
+        widget.scrollControllers.horizontalBodyController.position;
+    final verticalPosition =
+        widget.scrollControllers.verticalBodyController.position;
 
-    showLeftCircleButton.value = horizontalPosition.pixels > horizontalPosition.minScrollExtent;
-    showRightCircleButton.value = horizontalPosition.pixels < horizontalPosition.maxScrollExtent;
+    showLeftCircleButton.value =
+        horizontalPosition.pixels <= horizontalPosition.minScrollExtent;
+    showRightCircleButton.value =
+        horizontalPosition.pixels >= horizontalPosition.maxScrollExtent;
 
-    showTopCircleButton.value = verticalPosition.pixels > verticalPosition.minScrollExtent;
-    showBottomCircleButton.value = verticalPosition.pixels < verticalPosition.maxScrollExtent;
+    showTopCircleButton.value =
+        verticalPosition.pixels <= verticalPosition.minScrollExtent;
+    showBottomCircleButton.value =
+        verticalPosition.pixels >= verticalPosition.maxScrollExtent;
   }
 
   bool _onHorizontalScrollingNotification({
@@ -207,7 +211,6 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
     final position = controller.position;
     final cellHeight = widget.cellDimensions.contentCellHeight ?? 0;
 
-
     if (position.hasPixels) {
       final newShowTopCircleButton =
           position.pixels <= position.minScrollExtent;
@@ -220,7 +223,7 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
       if (showBottomCircleButton != newShowBottomCircleButton)
         showBottomCircleButton.value = newShowBottomCircleButton;
     }
-    
+
     // if (position.hasPixels) {
     //   final newShowTopCircleButton =
     //       position.pixels > position.minScrollExtent;
@@ -282,6 +285,7 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
       _checkInitialScrollPositions();
     });
   }
+
   @override
   void dispose() {
     if (widget.shouldDisposeScrollControllers) {
@@ -304,337 +308,373 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
     return Stack(
       children: [
         Padding(
-          padding: EdgeInsets.only( right: 32,bottom: 32,),
-          child: Column(
-            children: <Widget>[
-              Row(
-                textDirection: widget.tableDirection,
-                children: <Widget>[
-                  /// STICKY LEGEND
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: widget.onStickyLegendPressed,
-                    child: Container(
-                      width: widget.cellDimensions.stickyLegendWidth,
-                      height: widget.cellDimensions.stickyLegendHeight,
-                      alignment: widget.cellAlignments.stickyLegendAlignment,
-                      child: widget.legendCell,
-                    ),
-                  ),
+          padding: EdgeInsets.only(
+            right: 32,
+            bottom: 32,
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final fullItemsWidth = (widget.columnsLength *
+                  (widget.cellDimensions.contentCellWidth ?? 0)) +
+                  widget.cellDimensions.stickyLegendWidth;
+              final fullItemsHeight = (widget.rowsLength *
+                  (widget.cellDimensions.contentCellHeight ?? 0)) +
+                  widget.cellDimensions.stickyLegendHeight;
+              return SizedBox(
+                width: fullItemsWidth > constraints.maxWidth ? constraints.maxWidth : fullItemsWidth,
+                height: fullItemsHeight > constraints.maxHeight ? constraints.maxHeight : fullItemsHeight,
 
-                  /// STICKY ROW
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        NotificationListener<ScrollNotification>(
-                          onNotification: (notification) =>
-                              _onHorizontalScrollingNotification(
-                            notification: notification,
-                            controller:
-                                widget.scrollControllers.horizontalTitleController,
+                child: Column(
+                  children: <Widget>[
+                    Row(
+                      textDirection: widget.tableDirection,
+                      children: <Widget>[
+                        /// STICKY LEGEND
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: widget.onStickyLegendPressed,
+                          child: Container(
+                            width: widget.cellDimensions.stickyLegendWidth,
+                            height: widget.cellDimensions.stickyLegendHeight,
+                            alignment: widget.cellAlignments.stickyLegendAlignment,
+                            child: widget.legendCell,
                           ),
-                          child: Scrollbar(
-                            key: Key('Row ${widget.showVerticalScrollbar}'),
-                            thumbVisibility: widget.showVerticalScrollbar ?? false,
-                            controller:
-                                widget.scrollControllers.horizontalTitleController,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: widget.columnsTitlesTopLeftBorderRadius ??
-                                      Radius.zero,
+                        ),
+
+                        /// STICKY ROW
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              NotificationListener<ScrollNotification>(
+                                onNotification: (notification) =>
+                                    _onHorizontalScrollingNotification(
+                                  notification: notification,
+                                  controller: widget
+                                      .scrollControllers.horizontalTitleController,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    offset: Offset(0, 4),
-                                    blurRadius: 12,
-                                    spreadRadius: 0,
-                                    color: Color(0xff333333).withOpacity(0.12),
-                                  )
-                                ],
+                                child: Scrollbar(
+                                  key: Key('Row ${widget.showVerticalScrollbar}'),
+                                  thumbVisibility:
+                                      widget.showVerticalScrollbar ?? false,
+                                  controller: widget
+                                      .scrollControllers.horizontalTitleController,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: widget
+                                                .columnsTitlesTopLeftBorderRadius ??
+                                            Radius.zero,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          offset: Offset(0, 4),
+                                          blurRadius: 12,
+                                          spreadRadius: 0,
+                                          color:
+                                              Color(0xff333333).withOpacity(0.12),
+                                        )
+                                      ],
+                                    ),
+                                    child: SingleChildScrollView(
+                                      reverse: widget.tableDirection ==
+                                          TextDirection.rtl,
+                                      physics: widget.scrollPhysics.stickyRow,
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
+                                        textDirection: widget.tableDirection,
+                                        children: List.generate(
+                                          widget.columnsLength,
+                                          (i) => GestureDetector(
+                                            behavior: HitTestBehavior.opaque,
+                                            onTap: () =>
+                                                widget.onColumnTitlePressed(i),
+                                            child: Container(
+                                              // decoration: BoxDecoration(
+                                              //   border: Border(
+                                              //     left: BorderSide(
+                                              //       width: 1.0,
+                                              //       color: Color(0xffE1E7EA),
+                                              //     ),
+                                              //   ),
+                                              // ),
+                                              key: globalRowTitleKeys[i] ??=
+                                                  GlobalKey(),
+                                              width: widget.cellDimensions
+                                                  .stickyWidth(i),
+                                              height: widget.cellDimensions
+                                                  .stickyLegendHeight,
+                                              alignment: widget.cellAlignments
+                                                  .rowAlignment(i),
+                                              child: widget.columnsTitleBuilder(i),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      controller: widget.scrollControllers
+                                          .horizontalTitleController,
+                                    ),
+                                  ),
+                                ),
                               ),
+                              // if (widget.columnsTitlesLeftBorder != null)
+                              //   Positioned.fill(
+                              //     left: -1 * (widget.columnsTitlesLeftBorder?.width ?? 0),
+                              //     child: DecoratedBox(
+                              //       decoration: BoxDecoration(
+                              //         borderRadius: BorderRadius.only(
+                              //           topLeft: widget.columnsTitlesTopLeftBorderRadius ??
+                              //               Radius.zero,
+                              //         ),
+                              //         border: Border(
+                              //           left: widget.columnsTitlesLeftBorder!,
+                              //         ),
+                              //       ),
+                              //     ),
+                              //   ),
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        textDirection: widget.tableDirection,
+                        children: <Widget>[
+                          /// STICKY COLUMN
+                          Stack(
+                            alignment: AlignmentDirectional.center,
+                            clipBehavior: Clip.none,
+                            children: [
+                              NotificationListener<ScrollNotification>(
+                                child: Scrollbar(
+                                  // Key is required to avoid 'The Scrollbar's ScrollController has no ScrollPosition attached.
+                                  key: Key(
+                                      'Column ${widget.showHorizontalScrollbar}'),
+                                  thumbVisibility:
+                                      widget.showHorizontalScrollbar ?? false,
+                                  controller: widget
+                                      .scrollControllers.verticalBodyController,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          offset: Offset(4, -4),
+                                          blurRadius: 12,
+                                          spreadRadius: 0,
+                                          color:
+                                              Color(0xff333333).withOpacity(0.12),
+                                        )
+                                      ],
+                                    ),
+                                    child: SingleChildScrollView(
+                                      physics: widget.scrollPhysics.stickyColumn,
+                                      child: Column(
+                                        children: List.generate(
+                                          widget.rowsLength,
+                                          (i) => GestureDetector(
+                                            behavior: HitTestBehavior.opaque,
+                                            onTap: () =>
+                                                widget.onRowTitlePressed(i),
+                                            child: Container(
+                                              key: globalColumnTitleKeys[i] ??=
+                                                  GlobalKey(),
+                                              width: widget
+                                                  .cellDimensions.stickyLegendWidth,
+                                              height: widget.cellDimensions
+                                                  .stickyHeight(i),
+                                              alignment: widget.cellAlignments
+                                                  .columnAlignment(i),
+                                              child: widget.rowsTitleBuilder(i),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      controller: widget.scrollControllers
+                                          .verticalTitleController,
+                                    ),
+                                  ),
+                                ),
+                                onNotification: (notification) =>
+                                    _onVerticalScrollingNotification(
+                                  notification: notification,
+                                  controller: widget
+                                      .scrollControllers.verticalTitleController,
+                                ),
+                              ),
+                            ],
+                          ),
+                          // CONTENT
+                          Expanded(
+                            child: NotificationListener<ScrollNotification>(
                               child: SingleChildScrollView(
                                 reverse: widget.tableDirection == TextDirection.rtl,
-                                physics: widget.scrollPhysics.stickyRow,
+                                physics: widget.scrollPhysics.contentHorizontal,
                                 scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                  textDirection: widget.tableDirection,
-                                  children: List.generate(
-                                    widget.columnsLength,
-                                    (i) => GestureDetector(
-                                      behavior: HitTestBehavior.opaque,
-                                      onTap: () => widget.onColumnTitlePressed(i),
-                                      child: Container(
-                                        // decoration: BoxDecoration(
-                                        //   border: Border(
-                                        //     left: BorderSide(
-                                        //       width: 1.0,
-                                        //       color: Color(0xffE1E7EA),
-                                        //     ),
-                                        //   ),
-                                        // ),
-                                        key: globalRowTitleKeys[i] ??= GlobalKey(),
-                                        width: widget.cellDimensions.stickyWidth(i),
-                                        height:
-                                            widget.cellDimensions.stickyLegendHeight,
-                                        alignment:
-                                            widget.cellAlignments.rowAlignment(i),
-                                        child: widget.columnsTitleBuilder(i),
-                                      ),
-                                    ),
-                                  ),
-                                ),
                                 controller: widget
-                                    .scrollControllers.horizontalTitleController,
-                              ),
-                            ),
-                          ),
-                        ),
-                        // if (widget.columnsTitlesLeftBorder != null)
-                        //   Positioned.fill(
-                        //     left: -1 * (widget.columnsTitlesLeftBorder?.width ?? 0),
-                        //     child: DecoratedBox(
-                        //       decoration: BoxDecoration(
-                        //         borderRadius: BorderRadius.only(
-                        //           topLeft: widget.columnsTitlesTopLeftBorderRadius ??
-                        //               Radius.zero,
-                        //         ),
-                        //         border: Border(
-                        //           left: widget.columnsTitlesLeftBorder!,
-                        //         ),
-                        //       ),
-                        //     ),
-                        //   ),
-
-                      ],
-                    ),
-                  )
-                ],
-              ),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  textDirection: widget.tableDirection,
-                  children: <Widget>[
-                    /// STICKY COLUMN
-                    Stack(
-                      alignment: AlignmentDirectional.center,
-                      clipBehavior: Clip.none,
-                      children: [
-                        NotificationListener<ScrollNotification>(
-                          child: Scrollbar(
-                            // Key is required to avoid 'The Scrollbar's ScrollController has no ScrollPosition attached.
-                            key: Key('Column ${widget.showHorizontalScrollbar}'),
-                            thumbVisibility: widget.showHorizontalScrollbar ?? false,
-                            controller:
-                                widget.scrollControllers.verticalBodyController,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    offset: Offset(4, -4),
-                                    blurRadius: 12,
-                                    spreadRadius: 0,
-                                    color: Color(0xff333333).withOpacity(0.12),
-                                  )
-                                ],
-                              ),
-                              child: SingleChildScrollView(
-                                physics: widget.scrollPhysics.stickyColumn,
-                                child: Column(
-                                  children: List.generate(
-                                    widget.rowsLength,
-                                    (i) => GestureDetector(
-                                      behavior: HitTestBehavior.opaque,
-                                      onTap: () => widget.onRowTitlePressed(i),
-                                      child: Container(
-                                        key: globalColumnTitleKeys[i] ??= GlobalKey(),
-                                        width:
-                                            widget.cellDimensions.stickyLegendWidth,
-                                        height: widget.cellDimensions.stickyHeight(i),
-                                        alignment:
-                                            widget.cellAlignments.columnAlignment(i),
-                                        child: widget.rowsTitleBuilder(i),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                controller:
-                                    widget.scrollControllers.verticalTitleController,
-                              ),
-                            ),
-                          ),
-                          onNotification: (notification) =>
-                              _onVerticalScrollingNotification(
-                            notification: notification,
-                            controller:
-                                widget.scrollControllers.verticalTitleController,
-                          ),
-                        ),
-
-                      ],
-                    ),
-                    // CONTENT
-                    Expanded(
-                      child: NotificationListener<ScrollNotification>(
-                        child: SingleChildScrollView(
-                          reverse: widget.tableDirection == TextDirection.rtl,
-                          physics: widget.scrollPhysics.contentHorizontal,
-                          scrollDirection: Axis.horizontal,
-                          controller:
-                              widget.scrollControllers.horizontalBodyController,
-                          child: NotificationListener<ScrollNotification>(
-                            child: SingleChildScrollView(
-                              physics: widget.scrollPhysics.contentVertical,
-                              controller:
-                                  widget.scrollControllers.verticalBodyController,
-                              child: Column(
-                                children: List.generate(
-                                  widget.rowsLength,
-                                  (int rowIdx) => Row(
-                                    textDirection: widget.tableDirection,
-                                    children: List.generate(
-                                      widget.columnsLength,
-                                      (int columnIdx) => GestureDetector(
-                                        behavior: HitTestBehavior.opaque,
-                                        onTap: () => widget.onContentCellPressed(
-                                            columnIdx, rowIdx),
-                                        child: Container(
-                                          width: widget.cellDimensions
-                                              .contentSize(rowIdx, columnIdx)
-                                              .width,
-                                          height: widget.cellDimensions
-                                              .contentSize(rowIdx, columnIdx)
-                                              .height,
-                                          alignment: widget.cellAlignments
-                                              .contentAlignment(rowIdx, columnIdx),
-                                          child: widget.contentCellBuilder(
-                                              columnIdx, rowIdx),
+                                    .scrollControllers.horizontalBodyController,
+                                child: NotificationListener<ScrollNotification>(
+                                  child: SingleChildScrollView(
+                                    physics: widget.scrollPhysics.contentVertical,
+                                    controller: widget
+                                        .scrollControllers.verticalBodyController,
+                                    child: Column(
+                                      children: List.generate(
+                                        widget.rowsLength,
+                                        (int rowIdx) => Row(
+                                          textDirection: widget.tableDirection,
+                                          children: List.generate(
+                                            widget.columnsLength,
+                                            (int columnIdx) => GestureDetector(
+                                              behavior: HitTestBehavior.opaque,
+                                              onTap: () =>
+                                                  widget.onContentCellPressed(
+                                                      columnIdx, rowIdx),
+                                              child: Container(
+                                                width: widget.cellDimensions
+                                                    .contentSize(rowIdx, columnIdx)
+                                                    .width,
+                                                height: widget.cellDimensions
+                                                    .contentSize(rowIdx, columnIdx)
+                                                    .height,
+                                                alignment: widget.cellAlignments
+                                                    .contentAlignment(
+                                                        rowIdx, columnIdx),
+                                                child: widget.contentCellBuilder(
+                                                    columnIdx, rowIdx),
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
+                                  onNotification: (notification) =>
+                                      _onVerticalScrollingNotification(
+                                    notification: notification,
+                                    controller: widget
+                                        .scrollControllers.verticalBodyController,
+                                  ),
                                 ),
                               ),
-                            ),
-                            onNotification: (notification) =>
-                                _onVerticalScrollingNotification(
-                              notification: notification,
-                              controller:
-                                  widget.scrollControllers.verticalBodyController,
+                              onNotification: (notification) =>
+                                  _onHorizontalScrollingNotification(
+                                notification: notification,
+                                controller: widget
+                                    .scrollControllers.horizontalBodyController,
+                              ),
                             ),
                           ),
-                        ),
-                        onNotification: (notification) =>
-                            _onHorizontalScrollingNotification(
-                          notification: notification,
-                          controller:
-                              widget.scrollControllers.horizontalBodyController,
-                        ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+              );
+            }
           ),
         ),
-        ValueListenableBuilder<bool>(valueListenable: showLeftCircleButton, builder: (context, value, child) {
-          if(value) {
-            return    Positioned(
-              top: (widget.cellDimensions.stickyLegendHeight / 2) - 32,
-              left: widget.cellDimensions.stickyLegendWidth - 32,
-              child: GestureDetector(
-                onTap: widget.onLeftCircleButtonPressed,
-                // onTap: () => widget
-                //     .scrollControllers.horizontalBodyController
-                //     .animateTo(
-                //   widget.scrollControllers.horizontalBodyController
-                //       .offset -
-                //       (widget.cellDimensions.contentCellWidth ?? 0),
-                //   duration: const Duration(milliseconds: 50),
-                //   curve: Curves.easeInOut,
-                // ),
-                child: _ArrowCircle(),
-              ),
-            );
-          }
+        ValueListenableBuilder<bool>(
+            valueListenable: showLeftCircleButton,
+            builder: (context, value, child) {
+              if (value) {
+                return Positioned(
+                  top: (widget.cellDimensions.stickyLegendHeight / 2) - 32,
+                  left: widget.cellDimensions.stickyLegendWidth - 32,
+                  child: GestureDetector(
+                    onTap: widget.onLeftCircleButtonPressed,
+                    // onTap: () => widget
+                    //     .scrollControllers.horizontalBodyController
+                    //     .animateTo(
+                    //   widget.scrollControllers.horizontalBodyController
+                    //       .offset -
+                    //       (widget.cellDimensions.contentCellWidth ?? 0),
+                    //   duration: const Duration(milliseconds: 50),
+                    //   curve: Curves.easeInOut,
+                    // ),
+                    child: _ArrowCircle(),
+                  ),
+                );
+              }
 
-          return SizedBox.shrink();
-        }),
+              return SizedBox.shrink();
+            }),
+        ValueListenableBuilder<bool>(
+            valueListenable: showRightCircleButton,
+            builder: (context, value, child) {
+              if (value) {
+                return Positioned(
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: widget.onRightCircleButtonPressed,
+                    // onTap: () => widget
+                    //     .scrollControllers.horizontalBodyController
+                    //     .animateTo(
+                    //   widget.scrollControllers.horizontalBodyController
+                    //       .offset +
+                    //       (widget.cellDimensions.contentCellWidth ?? 0),
+                    //   duration: const Duration(milliseconds: 50),
+                    //   curve: Curves.easeInOut,
+                    // ),
+                    child: _ArrowCircle(),
+                  ),
+                );
+              }
 
-        ValueListenableBuilder<bool>(valueListenable: showRightCircleButton, builder: (context, value, child) {
-          if(value){
-            return Positioned(
-              right: 0,
-              child: GestureDetector(
-                onTap: widget.onRightCircleButtonPressed,
-                // onTap: () => widget
-                //     .scrollControllers.horizontalBodyController
-                //     .animateTo(
-                //   widget.scrollControllers.horizontalBodyController
-                //       .offset +
-                //       (widget.cellDimensions.contentCellWidth ?? 0),
-                //   duration: const Duration(milliseconds: 50),
-                //   curve: Curves.easeInOut,
-                // ),
-                child: _ArrowCircle(),
-              ),
-            );
-          }
-
-          return SizedBox.shrink();
-        }),
-
-        ValueListenableBuilder<bool>(valueListenable: showTopCircleButton, builder: (context, value, child) {
-          if(value) {
-            return Positioned(
-              top: widget.cellDimensions.stickyLegendHeight - 32,
-              left: (widget.cellDimensions.stickyLegendWidth / 2) - 32,
-              child: GestureDetector(
-                onTap: widget.onTopCircleButtonPressed,
-                // onTap: () => widget
-                //     .scrollControllers.verticalBodyController
-                //     .animateTo(
-                //   widget.scrollControllers.verticalBodyController
-                //       .offset -
-                //       (widget.cellDimensions.contentCellHeight ?? 0),
-                //   duration: const Duration(milliseconds: 50),
-                //   curve: Curves.easeInOut,
-                // ),
-                child: _ArrowCircle(),
-              ),
-            );
-          }
-          return SizedBox.shrink();
-        }),
-
-        ValueListenableBuilder<bool>(valueListenable: showBottomCircleButton, builder: (context, value, child) {
-          if(value) {
-            return Positioned(
-              bottom: 0,
-              left: (widget.cellDimensions.stickyLegendWidth / 2) - 32,
-              child: GestureDetector(
-                onTap: widget.onBottomCircleButtonPressed,
-                // onTap: () => widget
-                //     .scrollControllers.verticalBodyController
-                //     .animateTo(
-                //   widget.scrollControllers.verticalBodyController
-                //       .offset +
-                //       (widget.cellDimensions.contentCellHeight ?? 0),
-                //   duration: const Duration(milliseconds: 50),
-                //   curve: Curves.easeInOut,
-                // ),
-                child: _ArrowCircle(),
-              ),
-            );
-          }
-          return SizedBox.shrink();
-        }),
-
+              return SizedBox.shrink();
+            }),
+        ValueListenableBuilder<bool>(
+            valueListenable: showTopCircleButton,
+            builder: (context, value, child) {
+              if (value) {
+                return Positioned(
+                  top: widget.cellDimensions.stickyLegendHeight - 32,
+                  left: (widget.cellDimensions.stickyLegendWidth / 2) - 32,
+                  child: GestureDetector(
+                    onTap: widget.onTopCircleButtonPressed,
+                    // onTap: () => widget
+                    //     .scrollControllers.verticalBodyController
+                    //     .animateTo(
+                    //   widget.scrollControllers.verticalBodyController
+                    //       .offset -
+                    //       (widget.cellDimensions.contentCellHeight ?? 0),
+                    //   duration: const Duration(milliseconds: 50),
+                    //   curve: Curves.easeInOut,
+                    // ),
+                    child: _ArrowCircle(),
+                  ),
+                );
+              }
+              return SizedBox.shrink();
+            }),
+        ValueListenableBuilder<bool>(
+            valueListenable: showBottomCircleButton,
+            builder: (context, value, child) {
+              if (value) {
+                return Positioned(
+                  bottom: 0,
+                  left: (widget.cellDimensions.stickyLegendWidth / 2) - 32,
+                  child: GestureDetector(
+                    onTap: widget.onBottomCircleButtonPressed,
+                    // onTap: () => widget
+                    //     .scrollControllers.verticalBodyController
+                    //     .animateTo(
+                    //   widget.scrollControllers.verticalBodyController
+                    //       .offset +
+                    //       (widget.cellDimensions.contentCellHeight ?? 0),
+                    //   duration: const Duration(milliseconds: 50),
+                    //   curve: Curves.easeInOut,
+                    // ),
+                    child: _ArrowCircle(),
+                  ),
+                );
+              }
+              return SizedBox.shrink();
+            }),
       ],
     );
   }
