@@ -29,11 +29,13 @@ const _borderRadius = Radius.circular(4);
 const _highlightClr = Color(0xffE3F4FD);
 const _selectedClr = Color(0xff0D4689);
 
-const _selectedItemIndex = 2;
+const _selectedItemIndex = 3;
 
 class _TapHandlerPageState extends State<TapHandlerPage> {
   int? selectedRow;
   int? selectedColumn;
+  int? scrollOffsetIndexX;
+  int? scrollOffsetIndexY;
 
   int pageAdder = 0;
 
@@ -56,6 +58,8 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
   void initState() {
     selectedRow = _selectedItemIndex;
     selectedColumn = _selectedItemIndex;
+    scrollOffsetIndexX = _selectedItemIndex - 1;
+    scrollOffsetIndexY = _selectedItemIndex - 3;
     super.initState();
   }
 
@@ -74,23 +78,23 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
             child: StickyHeadersTable(
               columnsLength: widget.titleColumn.length,
               rowsLength: widget.titleRow.length,
-              scrollOffsetIndexX: _selectedItemIndex,
-              scrollOffsetIndexY: _selectedItemIndex,
-              onLeftCircleButtonPressed:() => setState(() {
+              scrollOffsetIndexX: scrollOffsetIndexX,
+              scrollOffsetIndexY: scrollOffsetIndexY,
+              onLeftCircleButtonPressed: () => setState(() {
                 clearSelectedCell();
-                pageAdder-=1;
+                pageAdder -= 1;
               }),
-              onRightCircleButtonPressed:() => setState(() {
+              onRightCircleButtonPressed: () => setState(() {
                 clearSelectedCell();
-                pageAdder+=1;
+                pageAdder += 1;
               }),
-              onTopCircleButtonPressed:() => setState(() {
+              onTopCircleButtonPressed: () => setState(() {
                 clearSelectedCell();
-                pageAdder-=1;
+                pageAdder -= 1;
               }),
-              onBottomCircleButtonPressed:() => setState(() {
+              onBottomCircleButtonPressed: () => setState(() {
                 clearSelectedCell();
-                pageAdder+=1;
+                pageAdder += 1;
               }),
               cellDimensions: CellDimensions.fixed(
                 contentCellWidth: 88,
@@ -99,8 +103,7 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                 stickyLegendHeight: 64,
               ),
               columnsTitleBuilder: (i) {
-                final isLastRow =
-                    i + 1 >= widget.titleColumn.length;
+                final isLastRow = i + 1 >= widget.titleColumn.length;
                 final isAnyColumnCellSelected = selectedRow == i;
                 return Stack(
                   children: [
@@ -163,8 +166,7 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                 );
               },
               rowsTitleBuilder: (i) {
-                final isLastColumn =
-                    i + 1 >= widget.titleRow.length;
+                final isLastColumn = i + 1 >= widget.titleRow.length;
                 final isAnyRowCellSelected = selectedColumn == i;
                 return DecoratedBox(
                   decoration: buildRowsTitleDecoration(
@@ -209,10 +211,8 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                 final isColumnHighlighted =
                     selectedRow == i && selectedColumnValue >= j;
 
-                final isLastRow =
-                    i + 1 >= widget.titleColumn.length;
-                final isLastColumn =
-                    j + 1 >= widget.titleRow.length;
+                final isLastRow = i + 1 >= widget.titleColumn.length;
+                final isLastColumn = j + 1 >= widget.titleRow.length;
 
                 return Column(
                   mainAxisSize: MainAxisSize.min,
@@ -223,10 +223,15 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                         children: [
                           Expanded(
                             child: GestureDetector(
-                              onTap: () => setState(() {
-                                selectedColumn = j;
-                                selectedRow = i;
-                              }),
+                              onTap: () {
+                                scrollOffsetIndexX = null;
+                                scrollOffsetIndexY = null;
+
+                                setState(() {
+                                  selectedColumn = j;
+                                  selectedRow = i;
+                                });
+                              },
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
                                   color: getCellColor(isSelected,
@@ -262,7 +267,7 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                                       height: 4,
                                     ),
                                     Text(
-                                      '3.${15+pageAdder}k',
+                                      '3.${15 + pageAdder}k',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w300,
@@ -275,7 +280,7 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                                       height: 4,
                                     ),
                                     Text(
-                                      '4.${15+pageAdder}k',
+                                      '4.${15 + pageAdder}k',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w300,
