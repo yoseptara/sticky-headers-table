@@ -29,6 +29,8 @@ const _borderRadius = Radius.circular(4);
 const _highlightClr = Color(0xffE3F4FD);
 const _selectedClr = Color(0xff0D4689);
 
+const _selectedItemIndex = 2;
+
 class _TapHandlerPageState extends State<TapHandlerPage> {
   int? selectedRow;
   int? selectedColumn;
@@ -51,6 +53,13 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
   }
 
   @override
+  void initState() {
+    selectedRow = _selectedItemIndex;
+    selectedColumn = _selectedItemIndex;
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) => MaterialApp(
         home: Scaffold(
           appBar: AppBar(
@@ -65,6 +74,8 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
             child: StickyHeadersTable(
               columnsLength: widget.titleColumn.length,
               rowsLength: widget.titleRow.length,
+              scrollOffsetIndexX: _selectedItemIndex,
+              scrollOffsetIndexY: _selectedItemIndex,
               onLeftCircleButtonPressed:() => setState(() {
                 clearSelectedCell();
                 pageAdder-=1;
@@ -89,7 +100,7 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
               ),
               columnsTitleBuilder: (i) {
                 final isLastRow =
-                    (selectedRow ?? 0) + 1 >= widget.titleColumn.length;
+                    i + 1 >= widget.titleColumn.length;
                 final isAnyColumnCellSelected = selectedRow == i;
                 return Stack(
                   children: [
@@ -153,7 +164,7 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
               },
               rowsTitleBuilder: (i) {
                 final isLastColumn =
-                    (selectedColumn ?? 0) + 1 >= widget.titleRow.length;
+                    i + 1 >= widget.titleRow.length;
                 final isAnyRowCellSelected = selectedColumn == i;
                 return DecoratedBox(
                   decoration: buildRowsTitleDecoration(
@@ -199,9 +210,9 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                     selectedRow == i && selectedColumnValue >= j;
 
                 final isLastRow =
-                    (selectedRow ?? 0) + 1 >= widget.titleColumn.length;
+                    i + 1 >= widget.titleColumn.length;
                 final isLastColumn =
-                    (selectedColumn ?? 0) + 1 >= widget.titleRow.length;
+                    j + 1 >= widget.titleRow.length;
 
                 return Column(
                   mainAxisSize: MainAxisSize.min,
@@ -280,18 +291,8 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                               ),
                             ),
                           ),
-                          Container(
-                            width: _defaultBorderWidth,
-                            height: double.infinity,
-                            color: _defaultBorderClr,
-                          ),
                         ],
                       ),
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: _defaultBorderWidth,
-                      color: _defaultBorderClr,
                     ),
                   ],
                 );
@@ -331,7 +332,7 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
   }) {
     if (isAnyRowCellSelected) return _selectedBorderSide;
 
-    if (isLastColumn) return _defaultBorderSide;
+    if (!isLastColumn) return _defaultBorderSide;
 
     return BorderSide.none;
   }
@@ -362,7 +363,7 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
   }) {
     if (isAnyColumnCellSelected) return _selectedBorderSide;
 
-    if (isLastRow) return _defaultBorderSide;
+    if (!isLastRow) return _defaultBorderSide;
 
     return BorderSide.none;
   }
@@ -405,8 +406,8 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
   }) {
     if (isHighlighted) return _selectedBorderSide;
 
-    if (isLast) return _defaultBorderSide;
+    // if (!isLast) return _defaultBorderSide;
 
-    return BorderSide.none;
+    return _defaultBorderSide;
   }
 }

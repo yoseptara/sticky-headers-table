@@ -596,7 +596,7 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
                     //   duration: const Duration(milliseconds: 50),
                     //   curve: Curves.easeInOut,
                     // ),
-                    child: _ArrowCircle(),
+                    child: _ArrowCircle(icon: Icons.keyboard_arrow_left,),
                   ),
                 );
               }
@@ -620,7 +620,7 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
                     //   duration: const Duration(milliseconds: 50),
                     //   curve: Curves.easeInOut,
                     // ),
-                    child: _ArrowCircle(),
+                    child: _ArrowCircle(icon: Icons.keyboard_arrow_right,),
                   ),
                 );
               }
@@ -645,7 +645,7 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
                     //   duration: const Duration(milliseconds: 50),
                     //   curve: Curves.easeInOut,
                     // ),
-                    child: _ArrowCircle(),
+                    child: _ArrowCircle(icon: Icons.keyboard_arrow_up,),
                   ),
                 );
               }
@@ -669,7 +669,7 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
                     //   duration: const Duration(milliseconds: 50),
                     //   curve: Curves.easeInOut,
                     // ),
-                    child: _ArrowCircle(),
+                    child: _ArrowCircle(icon: Icons.keyboard_arrow_down,),
                   ),
                 );
               }
@@ -683,7 +683,10 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
 class _ArrowCircle extends StatelessWidget {
   const _ArrowCircle({
     Key? key,
+    required this.icon,
   }) : super(key: key);
+
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -703,7 +706,7 @@ class _ArrowCircle extends StatelessWidget {
                 color: Color(0xff333333).withOpacity(0.12),
               )
             ]),
-        child: Icon(Icons.circle),
+        child: Icon(icon),
       ),
     );
   }
