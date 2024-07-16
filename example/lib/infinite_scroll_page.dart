@@ -88,7 +88,7 @@ class _InfiniteScrollPageState extends State<InfiniteScrollPage> {
                 stickyRowAlignment: Alignment.centerLeft,
                 stickyLegendAlignment: Alignment.centerLeft,
               ),
-              cellDimensions: CellDimensions.fixed(
+              cellDimensions: (constraints) => CellDimensions.fixed(
                 contentCellWidth: screenWidth / 3.3,
                 contentCellHeight: 50,
                 stickyLegendWidth: screenWidth / 3.3,

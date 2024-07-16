@@ -55,7 +55,7 @@ class _ColumnWidthInPercentPageState extends State<ColumnWidthInPercentPage> {
         rowsTitleBuilder: (i) => Text(titleRow[i]),
         contentCellBuilder: (i, j) => Text(data[i][j]),
         legendCell: Text('Sticky Legend'),
-        cellDimensions: CellDimensions.uniform(
+        cellDimensions: (constraints) => CellDimensions.uniform(
           width: (screenWidth / (titleColumn.length + 1)),
           height: 50,
         ),

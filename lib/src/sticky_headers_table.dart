@@ -38,7 +38,7 @@ class StickyHeadersTable extends StatefulWidget {
     required this.contentCellBuilder,
 
     /// Table cell dimensions
-    this.cellDimensions = CellDimensions.base,
+    CellDimensions Function(BoxConstraints constraints)? cellDimensions,
 
     /// Alignments for cell contents
     this.cellAlignments = CellAlignments.base,
@@ -76,7 +76,8 @@ class StickyHeadersTable extends StatefulWidget {
     /// Turn scrollbars
     this.showVerticalScrollbar,
     this.showHorizontalScrollbar,
-  })  : this.shouldDisposeScrollControllers = scrollControllers == null,
+  })  : this.cellDimensions = cellDimensions ?? ((constraints)=> CellDimensions.base),
+        this.shouldDisposeScrollControllers = scrollControllers == null,
         this.scrollControllers = scrollControllers ?? ScrollControllers(),
         this.onStickyLegendPressed = onStickyLegendPressed ?? (() {}),
         this.onColumnTitlePressed = onColumnTitlePressed ?? ((_) {}),
@@ -84,7 +85,7 @@ class StickyHeadersTable extends StatefulWidget {
         this.onContentCellPressed = onContentCellPressed ?? ((_, __) {}),
         this.scrollPhysics = scrollPhysics ?? CustomScrollPhysics(),
         super(key: key) {
-    cellDimensions.runAssertions(rowsLength, columnsLength);
+    this.cellDimensions(BoxConstraints()).runAssertions(rowsLength, columnsLength);
     cellAlignments.runAssertions(rowsLength, columnsLength);
   }
 
@@ -96,7 +97,7 @@ class StickyHeadersTable extends StatefulWidget {
   final Radius? columnsTitlesTopLeftBorderRadius;
   final Widget Function(int rowIndex) rowsTitleBuilder;
   final Widget Function(int columnIndex, int rowIndex) contentCellBuilder;
-  final CellDimensions cellDimensions;
+  final CellDimensions Function(BoxConstraints constraints) cellDimensions;
   final CellAlignments cellAlignments;
   final Function() onStickyLegendPressed;
   final Function()? onLeftCircleButtonPressed;
@@ -165,7 +166,7 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
     );
 
     final position = controller.position;
-    final cellWidth = widget.cellDimensions.contentCellWidth ?? 0;
+    // final cellWidth = widget.cellDimensions.contentCellWidth ?? 0;
 
     if (position.hasPixels) {
       final newShowLeftCircleButton =
@@ -209,7 +210,7 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
     );
 
     final position = controller.position;
-    final cellHeight = widget.cellDimensions.contentCellHeight ?? 0;
+    // final cellHeight = widget.cellDimensions.contentCellHeight ?? 0;
 
     if (position.hasPixels) {
       final newShowTopCircleButton =
@@ -305,6 +306,7 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
       widget.scrollControllers.horizontalBodyController,
     );
     SchedulerBinding.instance.addPostFrameCallback((_) => _shiftUsingOffsets());
+    final cellDimensions = widget.cellDimensions(BoxConstraints());
     return Stack(
       children: [
         Padding(
@@ -312,190 +314,252 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
             right: 32,
             bottom: 32,
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final fullItemsWidth = (widget.columnsLength *
-                  (widget.cellDimensions.contentCellWidth ?? 0)) +
-                  widget.cellDimensions.stickyLegendWidth;
-              final fullItemsHeight = (widget.rowsLength *
-                  (widget.cellDimensions.contentCellHeight ?? 0)) +
-                  widget.cellDimensions.stickyLegendHeight;
-              return SizedBox(
-                width: fullItemsWidth > constraints.maxWidth ? constraints.maxWidth : fullItemsWidth,
-                height: fullItemsHeight > constraints.maxHeight ? constraints.maxHeight : fullItemsHeight,
-
-                child: Column(
-                  children: <Widget>[
-                    Row(
-                      textDirection: widget.tableDirection,
-                      children: <Widget>[
-                        /// STICKY LEGEND
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: widget.onStickyLegendPressed,
-                          child: Container(
-                            width: widget.cellDimensions.stickyLegendWidth,
-                            height: widget.cellDimensions.stickyLegendHeight,
-                            alignment: widget.cellAlignments.stickyLegendAlignment,
-                            child: widget.legendCell,
-                          ),
+          child: LayoutBuilder(builder: (context, constraints) {
+            final cellDimensions = widget.cellDimensions(constraints);
+            final fullItemsWidth = (widget.columnsLength *
+                    (cellDimensions.contentCellWidth ?? 0)) +
+                cellDimensions.stickyLegendWidth;
+            final fullItemsHeight = (widget.rowsLength *
+                    (cellDimensions.contentCellHeight ?? 0)) +
+                cellDimensions.stickyLegendHeight;
+            return SizedBox(
+              width: fullItemsWidth > constraints.maxWidth
+                  ? constraints.maxWidth
+                  : fullItemsWidth,
+              height: fullItemsHeight > constraints.maxHeight
+                  ? constraints.maxHeight
+                  : fullItemsHeight,
+              child: Column(
+                children: <Widget>[
+                  Row(
+                    textDirection: widget.tableDirection,
+                    children: <Widget>[
+                      /// STICKY LEGEND
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: widget.onStickyLegendPressed,
+                        child: Container(
+                          width: cellDimensions.stickyLegendWidth,
+                          height: cellDimensions.stickyLegendHeight,
+                          alignment:
+                              widget.cellAlignments.stickyLegendAlignment,
+                          child: widget.legendCell,
                         ),
+                      ),
 
-                        /// STICKY ROW
-                        Expanded(
-                          child: Stack(
-                            children: [
-                              NotificationListener<ScrollNotification>(
-                                onNotification: (notification) =>
-                                    _onHorizontalScrollingNotification(
-                                  notification: notification,
-                                  controller: widget
-                                      .scrollControllers.horizontalTitleController,
-                                ),
-                                child: Scrollbar(
-                                  key: Key('Row ${widget.showVerticalScrollbar}'),
-                                  thumbVisibility:
-                                      widget.showVerticalScrollbar ?? false,
-                                  controller: widget
-                                      .scrollControllers.horizontalTitleController,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: widget
-                                                .columnsTitlesTopLeftBorderRadius ??
-                                            Radius.zero,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          offset: Offset(0, 4),
-                                          blurRadius: 12,
-                                          spreadRadius: 0,
-                                          color:
-                                              Color(0xff333333).withOpacity(0.12),
-                                        )
-                                      ],
+                      /// STICKY ROW
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            NotificationListener<ScrollNotification>(
+                              onNotification: (notification) =>
+                                  _onHorizontalScrollingNotification(
+                                notification: notification,
+                                controller: widget.scrollControllers
+                                    .horizontalTitleController,
+                              ),
+                              child: Scrollbar(
+                                key: Key('Row ${widget.showVerticalScrollbar}'),
+                                thumbVisibility:
+                                    widget.showVerticalScrollbar ?? false,
+                                controller: widget.scrollControllers
+                                    .horizontalTitleController,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: widget
+                                              .columnsTitlesTopLeftBorderRadius ??
+                                          Radius.zero,
                                     ),
-                                    child: SingleChildScrollView(
-                                      reverse: widget.tableDirection ==
-                                          TextDirection.rtl,
-                                      physics: widget.scrollPhysics.stickyRow,
-                                      scrollDirection: Axis.horizontal,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        textDirection: widget.tableDirection,
-                                        children: List.generate(
-                                          widget.columnsLength,
-                                          (i) => GestureDetector(
-                                            behavior: HitTestBehavior.opaque,
-                                            onTap: () =>
-                                                widget.onColumnTitlePressed(i),
-                                            child: Container(
-                                              // decoration: BoxDecoration(
-                                              //   border: Border(
-                                              //     left: BorderSide(
-                                              //       width: 1.0,
-                                              //       color: Color(0xffE1E7EA),
-                                              //     ),
-                                              //   ),
-                                              // ),
-                                              key: globalRowTitleKeys[i] ??=
-                                                  GlobalKey(),
-                                              width: widget.cellDimensions
-                                                  .stickyWidth(i),
-                                              height: widget.cellDimensions
-                                                  .stickyLegendHeight,
-                                              alignment: widget.cellAlignments
-                                                  .rowAlignment(i),
-                                              child: widget.columnsTitleBuilder(i),
-                                            ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        offset: Offset(0, 4),
+                                        blurRadius: 12,
+                                        spreadRadius: 0,
+                                        color:
+                                            Color(0xff333333).withOpacity(0.12),
+                                      )
+                                    ],
+                                  ),
+                                  child: SingleChildScrollView(
+                                    reverse: widget.tableDirection ==
+                                        TextDirection.rtl,
+                                    physics: widget.scrollPhysics.stickyRow,
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      textDirection: widget.tableDirection,
+                                      children: List.generate(
+                                        widget.columnsLength,
+                                        (i) => GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
+                                          onTap: () =>
+                                              widget.onColumnTitlePressed(i),
+                                          child: Container(
+                                            // decoration: BoxDecoration(
+                                            //   border: Border(
+                                            //     left: BorderSide(
+                                            //       width: 1.0,
+                                            //       color: Color(0xffE1E7EA),
+                                            //     ),
+                                            //   ),
+                                            // ),
+                                            key: globalRowTitleKeys[i] ??=
+                                                GlobalKey(),
+                                            width: cellDimensions
+                                                .stickyWidth(i),
+                                            height:cellDimensions
+                                                .stickyLegendHeight,
+                                            alignment: widget.cellAlignments
+                                                .rowAlignment(i),
+                                            child:
+                                                widget.columnsTitleBuilder(i),
                                           ),
                                         ),
                                       ),
-                                      controller: widget.scrollControllers
-                                          .horizontalTitleController,
                                     ),
+                                    controller: widget.scrollControllers
+                                        .horizontalTitleController,
                                   ),
                                 ),
                               ),
-                              // if (widget.columnsTitlesLeftBorder != null)
-                              //   Positioned.fill(
-                              //     left: -1 * (widget.columnsTitlesLeftBorder?.width ?? 0),
-                              //     child: DecoratedBox(
-                              //       decoration: BoxDecoration(
-                              //         borderRadius: BorderRadius.only(
-                              //           topLeft: widget.columnsTitlesTopLeftBorderRadius ??
-                              //               Radius.zero,
-                              //         ),
-                              //         border: Border(
-                              //           left: widget.columnsTitlesLeftBorder!,
-                              //         ),
-                              //       ),
-                              //     ),
-                              //   ),
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        textDirection: widget.tableDirection,
-                        children: <Widget>[
-                          /// STICKY COLUMN
-                          Stack(
-                            alignment: AlignmentDirectional.center,
-                            clipBehavior: Clip.none,
-                            children: [
-                              NotificationListener<ScrollNotification>(
-                                child: Scrollbar(
-                                  // Key is required to avoid 'The Scrollbar's ScrollController has no ScrollPosition attached.
-                                  key: Key(
-                                      'Column ${widget.showHorizontalScrollbar}'),
-                                  thumbVisibility:
-                                      widget.showHorizontalScrollbar ?? false,
+                            ),
+                            // if (widget.columnsTitlesLeftBorder != null)
+                            //   Positioned.fill(
+                            //     left: -1 * (widget.columnsTitlesLeftBorder?.width ?? 0),
+                            //     child: DecoratedBox(
+                            //       decoration: BoxDecoration(
+                            //         borderRadius: BorderRadius.only(
+                            //           topLeft: widget.columnsTitlesTopLeftBorderRadius ??
+                            //               Radius.zero,
+                            //         ),
+                            //         border: Border(
+                            //           left: widget.columnsTitlesLeftBorder!,
+                            //         ),
+                            //       ),
+                            //     ),
+                            //   ),
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      textDirection: widget.tableDirection,
+                      children: <Widget>[
+                        /// STICKY COLUMN
+                        Stack(
+                          alignment: AlignmentDirectional.center,
+                          clipBehavior: Clip.none,
+                          children: [
+                            NotificationListener<ScrollNotification>(
+                              child: Scrollbar(
+                                // Key is required to avoid 'The Scrollbar's ScrollController has no ScrollPosition attached.
+                                key: Key(
+                                    'Column ${widget.showHorizontalScrollbar}'),
+                                thumbVisibility:
+                                    widget.showHorizontalScrollbar ?? false,
+                                controller: widget
+                                    .scrollControllers.verticalBodyController,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        offset: Offset(4, -4),
+                                        blurRadius: 12,
+                                        spreadRadius: 0,
+                                        color:
+                                            Color(0xff333333).withOpacity(0.12),
+                                      )
+                                    ],
+                                  ),
+                                  child: SingleChildScrollView(
+                                    physics: widget.scrollPhysics.stickyColumn,
+                                    child: Column(
+                                      children: List.generate(
+                                        widget.rowsLength,
+                                        (i) => GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
+                                          onTap: () =>
+                                              widget.onRowTitlePressed(i),
+                                          child: Container(
+                                            key: globalColumnTitleKeys[i] ??=
+                                                GlobalKey(),
+                                            width: cellDimensions
+                                                .stickyLegendWidth,
+                                            height:cellDimensions
+                                                .stickyHeight(i),
+                                            alignment: widget.cellAlignments
+                                                .columnAlignment(i),
+                                            child: widget.rowsTitleBuilder(i),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    controller: widget.scrollControllers
+                                        .verticalTitleController,
+                                  ),
+                                ),
+                              ),
+                              onNotification: (notification) =>
+                                  _onVerticalScrollingNotification(
+                                notification: notification,
+                                controller: widget
+                                    .scrollControllers.verticalTitleController,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // CONTENT
+                        Expanded(
+                          child: NotificationListener<ScrollNotification>(
+                            child: SingleChildScrollView(
+                              reverse:
+                                  widget.tableDirection == TextDirection.rtl,
+                              physics: widget.scrollPhysics.contentHorizontal,
+                              scrollDirection: Axis.horizontal,
+                              controller: widget
+                                  .scrollControllers.horizontalBodyController,
+                              child: NotificationListener<ScrollNotification>(
+                                child: SingleChildScrollView(
+                                  physics: widget.scrollPhysics.contentVertical,
                                   controller: widget
                                       .scrollControllers.verticalBodyController,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          offset: Offset(4, -4),
-                                          blurRadius: 12,
-                                          spreadRadius: 0,
-                                          color:
-                                              Color(0xff333333).withOpacity(0.12),
-                                        )
-                                      ],
-                                    ),
-                                    child: SingleChildScrollView(
-                                      physics: widget.scrollPhysics.stickyColumn,
-                                      child: Column(
+                                  child: Column(
+                                    children: List.generate(
+                                      widget.rowsLength,
+                                      (int rowIdx) => Row(
+                                        textDirection: widget.tableDirection,
                                         children: List.generate(
-                                          widget.rowsLength,
-                                          (i) => GestureDetector(
+                                          widget.columnsLength,
+                                          (int columnIdx) => GestureDetector(
                                             behavior: HitTestBehavior.opaque,
                                             onTap: () =>
-                                                widget.onRowTitlePressed(i),
+                                                widget.onContentCellPressed(
+                                                    columnIdx, rowIdx),
                                             child: Container(
-                                              key: globalColumnTitleKeys[i] ??=
-                                                  GlobalKey(),
-                                              width: widget
-                                                  .cellDimensions.stickyLegendWidth,
-                                              height: widget.cellDimensions
-                                                  .stickyHeight(i),
+                                              width:cellDimensions
+                                                  .contentSize(
+                                                      rowIdx, columnIdx)
+                                                  .width,
+                                              height: cellDimensions
+                                                  .contentSize(
+                                                      rowIdx, columnIdx)
+                                                  .height,
                                               alignment: widget.cellAlignments
-                                                  .columnAlignment(i),
-                                              child: widget.rowsTitleBuilder(i),
+                                                  .contentAlignment(
+                                                      rowIdx, columnIdx),
+                                              child: widget.contentCellBuilder(
+                                                  columnIdx, rowIdx),
                                             ),
                                           ),
                                         ),
                                       ),
-                                      controller: widget.scrollControllers
-                                          .verticalTitleController,
                                     ),
                                   ),
                                 ),
@@ -503,100 +567,36 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
                                     _onVerticalScrollingNotification(
                                   notification: notification,
                                   controller: widget
-                                      .scrollControllers.verticalTitleController,
+                                      .scrollControllers.verticalBodyController,
                                 ),
-                              ),
-                            ],
-                          ),
-                          // CONTENT
-                          Expanded(
-                            child: NotificationListener<ScrollNotification>(
-                              child: SingleChildScrollView(
-                                reverse: widget.tableDirection == TextDirection.rtl,
-                                physics: widget.scrollPhysics.contentHorizontal,
-                                scrollDirection: Axis.horizontal,
-                                controller: widget
-                                    .scrollControllers.horizontalBodyController,
-                                child: NotificationListener<ScrollNotification>(
-                                  child: SingleChildScrollView(
-                                    physics: widget.scrollPhysics.contentVertical,
-                                    controller: widget
-                                        .scrollControllers.verticalBodyController,
-                                    child: Column(
-                                      children: List.generate(
-                                        widget.rowsLength,
-                                        (int rowIdx) => Row(
-                                          textDirection: widget.tableDirection,
-                                          children: List.generate(
-                                            widget.columnsLength,
-                                            (int columnIdx) => GestureDetector(
-                                              behavior: HitTestBehavior.opaque,
-                                              onTap: () =>
-                                                  widget.onContentCellPressed(
-                                                      columnIdx, rowIdx),
-                                              child: Container(
-                                                width: widget.cellDimensions
-                                                    .contentSize(rowIdx, columnIdx)
-                                                    .width,
-                                                height: widget.cellDimensions
-                                                    .contentSize(rowIdx, columnIdx)
-                                                    .height,
-                                                alignment: widget.cellAlignments
-                                                    .contentAlignment(
-                                                        rowIdx, columnIdx),
-                                                child: widget.contentCellBuilder(
-                                                    columnIdx, rowIdx),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  onNotification: (notification) =>
-                                      _onVerticalScrollingNotification(
-                                    notification: notification,
-                                    controller: widget
-                                        .scrollControllers.verticalBodyController,
-                                  ),
-                                ),
-                              ),
-                              onNotification: (notification) =>
-                                  _onHorizontalScrollingNotification(
-                                notification: notification,
-                                controller: widget
-                                    .scrollControllers.horizontalBodyController,
                               ),
                             ),
+                            onNotification: (notification) =>
+                                _onHorizontalScrollingNotification(
+                              notification: notification,
+                              controller: widget
+                                  .scrollControllers.horizontalBodyController,
+                            ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
-            }
-          ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ),
         ValueListenableBuilder<bool>(
             valueListenable: showLeftCircleButton,
             builder: (context, value, child) {
               if (value) {
                 return Positioned(
-                  top: (widget.cellDimensions.stickyLegendHeight / 2) - 32,
-                  left: widget.cellDimensions.stickyLegendWidth - 32,
-                  child: GestureDetector(
+                  top: (cellDimensions.stickyLegendHeight / 2) - 32,
+                  left: cellDimensions.stickyLegendWidth - 32,
+                  child: _ArrowCircleButton(
+                    icon: Icons.keyboard_arrow_left,
                     onTap: widget.onLeftCircleButtonPressed,
-                    // onTap: () => widget
-                    //     .scrollControllers.horizontalBodyController
-                    //     .animateTo(
-                    //   widget.scrollControllers.horizontalBodyController
-                    //       .offset -
-                    //       (widget.cellDimensions.contentCellWidth ?? 0),
-                    //   duration: const Duration(milliseconds: 50),
-                    //   curve: Curves.easeInOut,
-                    // ),
-                    child: _ArrowCircle(icon: Icons.keyboard_arrow_left,),
                   ),
                 );
               }
@@ -609,18 +609,9 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
               if (value) {
                 return Positioned(
                   right: 0,
-                  child: GestureDetector(
+                  child: _ArrowCircleButton(
+                    icon: Icons.keyboard_arrow_right,
                     onTap: widget.onRightCircleButtonPressed,
-                    // onTap: () => widget
-                    //     .scrollControllers.horizontalBodyController
-                    //     .animateTo(
-                    //   widget.scrollControllers.horizontalBodyController
-                    //       .offset +
-                    //       (widget.cellDimensions.contentCellWidth ?? 0),
-                    //   duration: const Duration(milliseconds: 50),
-                    //   curve: Curves.easeInOut,
-                    // ),
-                    child: _ArrowCircle(icon: Icons.keyboard_arrow_right,),
                   ),
                 );
               }
@@ -632,20 +623,11 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
             builder: (context, value, child) {
               if (value) {
                 return Positioned(
-                  top: widget.cellDimensions.stickyLegendHeight - 32,
-                  left: (widget.cellDimensions.stickyLegendWidth / 2) - 32,
-                  child: GestureDetector(
+                  top: cellDimensions.stickyLegendHeight - 32,
+                  left: (cellDimensions.stickyLegendWidth / 2) - 32,
+                  child: _ArrowCircleButton(
+                    icon: Icons.keyboard_arrow_up,
                     onTap: widget.onTopCircleButtonPressed,
-                    // onTap: () => widget
-                    //     .scrollControllers.verticalBodyController
-                    //     .animateTo(
-                    //   widget.scrollControllers.verticalBodyController
-                    //       .offset -
-                    //       (widget.cellDimensions.contentCellHeight ?? 0),
-                    //   duration: const Duration(milliseconds: 50),
-                    //   curve: Curves.easeInOut,
-                    // ),
-                    child: _ArrowCircle(icon: Icons.keyboard_arrow_up,),
                   ),
                 );
               }
@@ -657,19 +639,10 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
               if (value) {
                 return Positioned(
                   bottom: 0,
-                  left: (widget.cellDimensions.stickyLegendWidth / 2) - 32,
-                  child: GestureDetector(
+                  left: (cellDimensions.stickyLegendWidth / 2) - 32,
+                  child: _ArrowCircleButton(
+                    icon: Icons.keyboard_arrow_down,
                     onTap: widget.onBottomCircleButtonPressed,
-                    // onTap: () => widget
-                    //     .scrollControllers.verticalBodyController
-                    //     .animateTo(
-                    //   widget.scrollControllers.verticalBodyController
-                    //       .offset +
-                    //       (widget.cellDimensions.contentCellHeight ?? 0),
-                    //   duration: const Duration(milliseconds: 50),
-                    //   curve: Curves.easeInOut,
-                    // ),
-                    child: _ArrowCircle(icon: Icons.keyboard_arrow_down,),
                   ),
                 );
               }
@@ -680,33 +653,38 @@ class _StickyHeadersTableState extends State<StickyHeadersTable> {
   }
 }
 
-class _ArrowCircle extends StatelessWidget {
-  const _ArrowCircle({
+class _ArrowCircleButton extends StatelessWidget {
+  const _ArrowCircleButton({
     Key? key,
     required this.icon,
+    required this.onTap,
   }) : super(key: key);
 
   final IconData icon;
+  final GestureTapCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                offset: Offset(0, 4),
-                blurRadius: 12,
-                spreadRadius: 0,
-                color: Color(0xff333333).withOpacity(0.12),
-              )
-            ]),
-        child: Icon(icon),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  offset: Offset(0, 4),
+                  blurRadius: 12,
+                  spreadRadius: 0,
+                  color: Color(0xff333333).withOpacity(0.12),
+                )
+              ]),
+          child: Icon(icon),
+        ),
       ),
     );
   }

@@ -96,8 +96,8 @@ class _TapHandlerPageState extends State<TapHandlerPage> {
                 clearSelectedCell();
                 pageAdder += 1;
               }),
-              cellDimensions: CellDimensions.fixed(
-                contentCellWidth: 88,
+              cellDimensions: (constraints) => CellDimensions.fixed(
+                contentCellWidth: (constraints.maxWidth - 97)/2.75,
                 contentCellHeight: 68,
                 stickyLegendWidth: 97,
                 stickyLegendHeight: 64,
